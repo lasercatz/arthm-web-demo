@@ -7,8 +7,8 @@
 :HL["/arthm-web-demo/_next/static/media/2fd1271fccfe3d73-s.p.05e8cfc6.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/arthm-web-demo/_next/static/media/b937dffe01fe22ed-s.p.759eed4f.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/arthm-web-demo/_next/static/chunks/fb56d336f0e557e5.css","style"]
-:HL["/_root/demo_input.webp","image"]
-:HL["/_root/demo_output.webp","image"]
-0:{"buildId":"lpm0U_MWfqVA0nNTwuaog","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":true},"head":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"isHeadPartial":false,"staleTime":300}
+:HL["/arthm-web-demo/_root/demo_input.webp","image"]
+:HL["/arthm-web-demo/_root/demo_output.webp","image"]
+0:{"buildId":"WhVQbJYUV5P7XIb5ASlul","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":true},"head":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"isHeadPartial":false,"staleTime":300}
 3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
 6:[["$","title","0",{"children":"Arthm"}],["$","meta","1",{"name":"description","content":"Your AI drawing companion"}]]
