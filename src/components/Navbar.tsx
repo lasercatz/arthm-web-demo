@@ -9,7 +9,7 @@ const nunito = Nunito({
   weight: ["500","600"],
   subsets: ["latin"],
 });
-
+const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
 export default function Navbar() {
      const [scrolled, setScrolled] = useState(false);
 
@@ -45,7 +45,7 @@ export default function Navbar() {
           {" "}
           <Box sx={{ width: "2.4em", height: "2.4em", position: "relative" }}>
             <Image
-              src="/logos/arthm-logo.svg"
+             src={`${base}/logos/arthm-logo.svg`}
               alt="Arthm logo"
               fill={true}
               priority

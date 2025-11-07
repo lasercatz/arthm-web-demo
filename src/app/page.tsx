@@ -1,7 +1,7 @@
 import Image from "next/image";
 import styles from "./page.module.css";
 import Navbar from "@/components/Navbar";
-import { Box, Button, Stack } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { Sour_Gummy, Nunito } from "next/font/google";
 import BrushRoundedIcon from "@mui/icons-material/BrushRounded";
 import KeyboardDoubleArrowRightRoundedIcon from '@mui/icons-material/KeyboardDoubleArrowRightRounded';
@@ -12,7 +12,7 @@ const nunito = Nunito({
   weight: ["500", "600"],
   subsets: ["latin"],
 });
-
+const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
 export default function Home() {
   return (
     <div className={styles.page}>
@@ -23,7 +23,7 @@ export default function Home() {
           sx={{
             width: "100vw",
             minHeight: "100vh",
-            backgroundImage: "url(/_root/bg.jpg)",
+            backgroundImage: `url(${process.env.NEXT_PUBLIC_BASE_PATH}/_root/bg.jpg)`,
             backgroundSize: "cover",
           }}
         >
@@ -162,14 +162,14 @@ export default function Home() {
               Painting by Arthm
             </Box>
             <Stack direction={"row"} flexWrap={"wrap"} gap={2} alignItems={"center"} justifyContent={"center"}>
-              <img className="frame" src="/_root/demo_input.webp" alt="" />
+              <img className="frame" src={`${base}/_root/demo_input.webp`} alt="" />
               <KeyboardDoubleArrowRightRoundedIcon/>
-              <img className="frame" src="/_root/demo_output.webp" alt="" />
+              <img className="frame" src={`${base}/_root/demo_output.webp`} alt="" />
             </Stack>
               <Box sx={{ fontSize: "1.6em", fontWeight: "500" }}>
               Painting process
             </Box>
-            <video className="frame" src="/_root/demo_process.mp4" autoPlay={true} loop={true} muted={true} controls={true}></video>
+            <video className="frame" src={`${base}/_root/demo_process.mp4`} autoPlay={true} loop={true} muted={true} controls={true}></video>
           <Box>This Arthm AI model can draw any image at the resolution of 384x384 pixels.</Box>
           <Box>Photo on <a target="_blank" href="https://unsplash.com/photos/a-serene-lake-surrounded-by-grassy-hills-and-snow-capped-mountains-K4gXZ-WLaoE">Unsplash</a></Box>
           </Stack>
