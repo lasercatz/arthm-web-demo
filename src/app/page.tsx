@@ -1,4 +1,8 @@
-import Image from "next/image";
+
+"use client";
+
+
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import Navbar from "@/components/Navbar";
 import { Box, Stack } from "@mui/material";
@@ -13,13 +17,14 @@ const nunito = Nunito({
   subsets: ["latin"],
 });
 const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
-export default function Home() {
+export default function Page() {
+   const router = useRouter();
+
   return (
     <div className={styles.page}>
       <Navbar />
       <main className={styles.main}>
         <Box
-          p="5em 3em"
           sx={{
             width: "100vw",
             minHeight: "100vh",
@@ -62,6 +67,7 @@ export default function Home() {
           <Stack direction="column" gap={2} alignItems="center" width={"100%"}>
             <Box
               sx={{
+                marginTop: "3em",
                 fontSize: "4em",
                 fontWeight: "500",
                 fontFamily: sourgummy.style.fontFamily,
@@ -97,6 +103,9 @@ export default function Home() {
               who draws & grows with you
             </Box>
             <button
+            onClick={()=>{
+             router.push("/canvas");
+            }}
               style={{
                 position: "relative",
                 overflow: "hidden",
@@ -170,8 +179,9 @@ export default function Home() {
               Painting process
             </Box>
             <video className="frame" src={`${base}/_root/demo_process.mp4`} autoPlay={true} loop={true} muted={true} controls={true}></video>
-          <Box>This Arthm AI model can draw any image at the resolution of 384x384 pixels.</Box>
-          <Box>Photo on <a target="_blank" href="https://unsplash.com/photos/a-serene-lake-surrounded-by-grassy-hills-and-snow-capped-mountains-K4gXZ-WLaoE">Unsplash</a></Box>
+                      <Box sx={{color:"#5e5e5eff"}}>Photo on <a target="_blank" href="https://unsplash.com/photos/a-serene-lake-surrounded-by-grassy-hills-and-snow-capped-mountains-K4gXZ-WLaoE">Unsplash</a></Box>
+
+          <Box sx={{color:"#2e2e2eff"}}>This Arthm AI model can draw any image at the resolution of 384x384 pixels.</Box>
           </Stack>
         </Box>
       </main>

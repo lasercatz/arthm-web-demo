@@ -1,11 +1,14 @@
+// app/layout.tsx (or layout.tsx)
 import type { Metadata } from "next";
 import "./globals.css";
 import { Noto_Sans } from "next/font/google";
+import ThemeProvider from "@/styling/ThemeProvider";
+
 const notoSans = Noto_Sans({
   weight: ["400"],
   subsets: ["latin"],
   display: "swap",
-})
+});
 
 export const metadata: Metadata = {
   title: "Arthm",
@@ -19,11 +22,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-        <head>
-        <link rel="icon" href= "/logos/arthm-logo.svg"/>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded"
+          rel="stylesheet"
+        />
+        <link rel="icon" href="/logos/arthm-logo.svg" />
       </head>
-      <body style={{ fontFamily: notoSans.style.fontFamily }}>
-        {children}
+      <body>
+        {/* Pass the simple fontFamily string into the client ThemeProvider */}
+        <ThemeProvider fontFamily={notoSans.style.fontFamily}>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
