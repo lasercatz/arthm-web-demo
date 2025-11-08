@@ -5,10 +5,8 @@
 :HL["/arthm-web-demo/_next/static/chunks/e07745555412d943.css","style"]
 :HL["/arthm-web-demo/_next/static/media/07454f8ad8aaac57-s.p.fc65572f.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/arthm-web-demo/_next/static/media/2fd1271fccfe3d73-s.p.05e8cfc6.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/arthm-web-demo/_next/static/media/b937dffe01fe22ed-s.p.759eed4f.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/arthm-web-demo/_next/static/chunks/ea33025fd8d67be6.css","style"]
 :HL["/arthm-web-demo/_next/static/chunks/3cd7cae5c32b3523.css","style"]
 :HL["https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded","style"]
-0:{"buildId":"dMJs30RMK1S6W0JBILwq3","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":true},"head":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"isHeadPartial":false,"staleTime":300}
+0:{"buildId":"dMJs30RMK1S6W0JBILwq3","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"canvas","paramType":null,"paramKey":"canvas","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":false}},"isRootLayout":true},"head":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"isHeadPartial":false,"staleTime":300}
 3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
 6:[["$","title","0",{"children":"Arthm"}],["$","meta","1",{"name":"description","content":"Your AI drawing companion"}]]
