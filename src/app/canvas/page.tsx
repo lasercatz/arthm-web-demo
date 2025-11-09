@@ -135,10 +135,7 @@ export default function Page({
   // track spacebar pressed (desktop panning)
   const [spacePressed, setSpacePressed] = useState(false);
 
-const [stageSize, setStageSize] = useState({
-  width: window.innerWidth,
-  height: window.innerHeight,
-});
+  const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
 
   // undo / clear
   const undo = () => setLines((l) => (l.length ? l.slice(0, l.length - 1) : l));
