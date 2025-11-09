@@ -1,11 +1,10 @@
 "use client";
-
+import Image from "next/image";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Stage, Layer, Line, Image as KonvaImage } from "react-konva";
 import styles from "./page.module.css";
 import {
   Box,
-  Button,
   IconButton,
   Stack,
   Slider,
@@ -14,16 +13,20 @@ import {
   Menu,
   MenuItem,
   Popover,
+  Paper,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import { ChromePicker } from "react-color";
 import ListSubheader from "@mui/material/ListSubheader";
-import CloseIcon from "@mui/icons-material/Close";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
-import { styled } from "@mui/material/styles";
+import NoteRoundedIcon from "@mui/icons-material/NoteRounded";
+import { styled, useTheme } from "@mui/material/styles";
 import { Nunito } from "next/font/google";
 
-import ReferenceImageDialog from "../components/ReferenceImageDialog";
+import WelcomeDialog from "../components/canvas/WelcomeDialog";
+import ReferenceImageDialog from "../components/canvas/ReferenceImageDialog";
 import { useRouter } from "next/navigation";
 
 const nunito = Nunito({
@@ -33,6 +36,7 @@ const nunito = Nunito({
 const StyledListHeader = styled(ListSubheader)({
   backgroundImage: "var(--Paper-overlay)",
 });
+
 type LineType = {
   points: number[];
   stroke: string;
@@ -98,15 +102,12 @@ function BackgroundImage({
 }
 
 export default function Page({
-  width = 1200,
-  height = 720,
   base = "",
 }: {
-  width?: number;
-  height?: number;
   base?: string;
 }) {
   const router = useRouter();
+  const theme = useTheme();
   const stageRef = useRef<any>(null);
   const layerRef = useRef<any>(null);
   const bgLayerRef = useRef<any>(null);
@@ -134,8 +135,10 @@ export default function Page({
   // track spacebar pressed (desktop panning)
   const [spacePressed, setSpacePressed] = useState(false);
 
-  // responsive stage size
-  const [stageSize, setStageSize] = useState({ width, height });
+const [stageSize, setStageSize] = useState({
+  width: window.innerWidth,
+  height: window.innerHeight,
+});
 
   // undo / clear
   const undo = () => setLines((l) => (l.length ? l.slice(0, l.length - 1) : l));
@@ -283,32 +286,176 @@ export default function Page({
     };
   }, []);
 
-  // touch handling: two-finger drag => pan; one-finger => draw
-  const onTouchStart = (e: any) => {
-    const touches = e?.evt?.touches;
-    if (!touches) return;
-    if (touches.length === 2) {
-      isPanningRef.current = true;
-      setIsStageDraggable(true);
-    } else if (touches.length === 1) {
-      if (isStageDraggable) return;
-    }
-  };
 
-  const onTouchEnd = (e: any) => {
-    const touches = e?.evt?.touches;
-    const count = touches ? touches.length : 0;
-    if (count < 2) {
+const initialPinchDistanceRef = useRef<number | null>(null);
+const initialStageScaleRef = useRef<number | null>(null);
+const pinchCenterStageRef = useRef<{ x: number; y: number } | null>(null);
+const lastMidpointPageRef = useRef<{ x: number; y: number } | null>(null);
+const initialStagePosRef = useRef<{ x: number; y: number } | null>(null);
+
+const getTouchDistance = (t1: Touch, t2: Touch) => {
+  const dx = t2.clientX - t1.clientX;
+  const dy = t2.clientY - t1.clientY;
+  return Math.hypot(dx, dy);
+};
+
+const getTouchMidpoint = (t1: Touch, t2: Touch) => {
+  return {
+    x: (t1.clientX + t2.clientX) / 2,
+    y: (t1.clientY + t2.clientY) / 2,
+  };
+};
+
+// Convert page/client coordinates to stage coordinates (taking stage position+scale into account)
+const pageToStage = (pageX: number, pageY: number) => {
+  const stage = stageRef.current;
+  if (!stage) return null;
+  const rect = stage.container().getBoundingClientRect();
+  const x = (pageX - rect.left - stage.x()) / stage.scaleX();
+  const y = (pageY - rect.top - stage.y()) / stage.scaleY();
+  return { x, y, pageX, pageY, rectLeft: rect.left, rectTop: rect.top };
+};
+
+const MIN_PINCH_DISTANCE_CHANGE = 6; // px — threshold to decide pinch vs pan
+const MIN_SCALE = 0.2;
+const MAX_SCALE = 8;
+
+const onTouchStart = (e: any) => {
+  const touches: TouchList | undefined = e?.evt?.touches;
+  if (!touches) return;
+
+  if (touches.length === 2) {
+    // initialize pinch/pan state
+    const t1 = touches[0];
+    const t2 = touches[1];
+    const dist = getTouchDistance(t1, t2);
+    initialPinchDistanceRef.current = dist;
+
+    const midpoint = getTouchMidpoint(t1, t2);
+    // store midpoint in stage coords so we can keep that point fixed during scale
+    const stageMid = pageToStage(midpoint.x, midpoint.y);
+    pinchCenterStageRef.current = stageMid ? { x: stageMid.x, y: stageMid.y } : null;
+
+    lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
+
+    const stage = stageRef.current;
+    initialStageScaleRef.current = stage ? stage.scaleX() : null;
+    initialStagePosRef.current = stage ? { x: stage.x(), y: stage.y() } : null;
+
+    // enter draggable mode for two-finger gestures
+    isPanningRef.current = true;
+    setIsStageDraggable(true);
+  } else if (touches.length === 1) {
+    // single finger: drawing (unless stage is draggable)
+    if (isStageDraggable) return;
+    // existing single-finger drawing code should handle pointerdown
+  }
+};
+
+const onTouchMove = (e: any) => {
+  const touches: TouchList | undefined = e?.evt?.touches;
+  if (!touches) return;
+  if (touches.length !== 2) return;
+
+  // prevent page scroll while interacting
+  e.evt.preventDefault();
+
+  const t1 = touches[0];
+  const t2 = touches[1];
+  const newDist = getTouchDistance(t1, t2);
+  const midpoint = getTouchMidpoint(t1, t2);
+
+  const initDist = initialPinchDistanceRef.current;
+  const initScale = initialStageScaleRef.current ?? 1;
+  const pinchCenterStage = pinchCenterStageRef.current;
+  const lastMid = lastMidpointPageRef.current;
+  const initPos = initialStagePosRef.current ?? { x: 0, y: 0 };
+
+  if (initDist == null || pinchCenterStage == null) {
+    // safety: if we lost init values, bail
+    return;
+  }
+
+  // Decide whether this movement is a pinch (scale) or a pan (move)
+  const distDelta = Math.abs(newDist - initDist);
+
+  if (distDelta >= MIN_PINCH_DISTANCE_CHANGE) {
+    // PINCH / ZOOM
+    const scaleFactor = newDist / initDist;
+    let newScale = initScale * scaleFactor;
+    newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+    setStageScale(newScale);
+
+    // Keep the pinch center anchored. Convert the current midpoint page coords
+    // into stage coordinates *before* scaling -> compute new stage position.
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    // pointer page coords -> we have midpoint.x/midpoint.y
+    // mousePointTo (in stage coords relative to old scale) = pinchCenterStage (we stored already)
+    const mousePointTo = pinchCenterStage;
+
+    // compute new top-left so that mousePointTo stays under midpoint on screen
+    // stage.container bounding rect used to compute container offset (midpoint is page coords)
+    const rect = stage.container().getBoundingClientRect();
+    const newPos = {
+      x: midpoint.x - rect.left - mousePointTo.x * newScale,
+      y: midpoint.y - rect.top - mousePointTo.y * newScale,
+    };
+
+    setStagePos(newPos);
+  } else {
+    // TWO-FINGER PAN: move stage by delta of midpoint
+    if (!lastMid) {
+      lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
+      return;
+    }
+    const dx = midpoint.x - lastMid.x;
+    const dy = midpoint.y - lastMid.y;
+
+    // update stage position by adding delta in page pixels
+    // But stage.x/y are in page pixels already (since you set them that way earlier)
+    // So we can apply dx,dy directly.
+    setStagePos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+
+    // update stored last midpoint
+    lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
+  }
+};
+
+const onTouchEnd = (e: any) => {
+  const touches: TouchList | undefined = e?.evt?.touches;
+  const count = touches ? touches.length : 0;
+
+  // if no fingers left — fully end gesture
+  if (count === 0) {
+    isPanningRef.current = false;
+    initialPinchDistanceRef.current = null;
+    initialStageScaleRef.current = null;
+    pinchCenterStageRef.current = null;
+    lastMidpointPageRef.current = null;
+    initialStagePosRef.current = null;
+    if (!spacePressed) setIsStageDraggable(false);
+  } else if (count === 1) {
+    // If one remains, we might want to switch into single-finger drawing mode.
+    // Clean up pinch state but keep stage draggable only if space is pressed or other flags
+    initialPinchDistanceRef.current = null;
+    initialStageScaleRef.current = null;
+    pinchCenterStageRef.current = null;
+    lastMidpointPageRef.current = null;
+    initialStagePosRef.current = null;
+
+    // keep draggable based on spacePressed
+    if (!spacePressed) {
+      setIsStageDraggable(false);
       isPanningRef.current = false;
-      if (!spacePressed) setIsStageDraggable(false);
     }
-  };
+  }
+};
 
-  // ResizeObserver to keep stage full-size inside the middle flex container
   useEffect(() => {
     const roTarget = containerRef.current;
     if (!roTarget) {
-      setStageSize({ width, height });
       return;
     }
 
@@ -327,29 +474,31 @@ export default function Page({
     });
 
     return () => ro.disconnect();
-  }, [width, height]);
+  }, []);
 
-  // cursor style: show grab when panning mode active
-  const cursorStyle = isStageDraggable
-    ? isPanningRef.current
-      ? "grabbing"
-      : "grab"
-    : "default";
+  const brushCursorSVG = encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M240-120q-45 0-89-22t-71-58q26 0 53-20.5t27-59.5q0-50 35-85t85-35q50 0 85 35t35 85q0 66-47 113t-113 47Zm230-240L360-470l358-358q11-11 27.5-11.5T774-828l54 54q12 12 12 28t-12 28L470-360Z"/></svg>
+`);
+  const eraserCursorSVG = encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M690-240h190v80H610l80-80Zm-500 80-85-85q-23-23-23.5-57t22.5-58l440-456q23-24 56.5-24t56.5 23l199 199q23 23 23 57t-23 57L520-160H190Z"/></svg>`);
   const [focused, setFocused] = useState(false);
   const [artworkName, setArtworkName] = useState("");
   const [moreOptonsAnchorEl, setMoreOptonsAnchorEl] =
     React.useState<null | HTMLElement>(null);
+
   const open = Boolean(moreOptonsAnchorEl);
   const handleClose = () => {
     setMoreOptonsAnchorEl(null);
   };
-
+  const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(true);
   const [refImageSelectDialogOpen, setRefImageSelectDialogOpen] =
-    useState(true);
+    useState(false);
+  const [chatboxOpen, setChatboxOpen] = useState(false);
 
   const [refImageSrc, setRefImageSrc] = useState<string>("");
   const [colorSelectorOpen, setColorSelectorOpen] = useState(false);
   const leftToolbarAnchorRef = useRef<HTMLDivElement | null>(null);
+
   return (
     <>
       <Box className={styles.page}>
@@ -438,8 +587,17 @@ export default function Page({
                     "aria-labelledby": "basic-button",
                   },
                 }}
+                sx={{ marginTop: ".5em" }}
               >
                 <StyledListHeader>Canvas</StyledListHeader>
+                <MenuItem
+                  onClick={() => {
+                    handleClose();
+                    setRefImageSelectDialogOpen(true);
+                  }}
+                >
+                  Select reference image
+                </MenuItem>
                 <MenuItem
                   onClick={() => {
                     handleClose();
@@ -452,6 +610,7 @@ export default function Page({
                 <MenuItem
                   onClick={() => {
                     handleClose();
+                    exportPNG();
                   }}
                 >
                   Export artwork
@@ -483,9 +642,9 @@ export default function Page({
                 position: "absolute",
                 bottom: { xs: "1em", sm: "auto" },
                 mt: { sm: "8em" },
-                left: {xs:"50%",sm:"1em"},
-                transform: {xs:"translateX(-50%)",sm:"translateX(0)"},
-                padding: {xs: ".6em .8em",sm:"1em .8em"},
+                left: { xs: "50%", sm: "1em" },
+                transform: { xs: "translateX(-50%)", sm: "translateX(0)" },
+                padding: { xs: ".6em .8em", sm: "1em .8em" },
                 borderRadius: "9999px",
                 backgroundColor: "#ffffffff",
                 boxShadow: "0px 0px 5px 5px rgba(0, 0, 0, 0.04)",
@@ -500,7 +659,7 @@ export default function Page({
                 onClick={() => setTool("brush")}
                 sx={{
                   backgroundColor:
-                    tool === "brush" ? "#dfdfdfff" : "transparent",
+                    tool === "brush" ? "#dfdfdfff !important" : "transparent",
                 }}
               >
                 <span className="material-symbols-rounded">brush</span>
@@ -509,7 +668,7 @@ export default function Page({
                 onClick={() => setTool("eraser")}
                 sx={{
                   backgroundColor:
-                    tool === "eraser" ? "#dfdfdfff" : "transparent",
+                    tool === "eraser" ? "#dfdfdfff !important" : "transparent",
                 }}
               >
                 <span className="material-symbols-rounded">ink_eraser</span>
@@ -521,7 +680,7 @@ export default function Page({
                   borderRadius: "9999px",
                   width: "2em",
                   aspectRatio: 1,
-                  overflow: "hidden", // ensures input stays inside
+                  cursor: "pointer",
                 }}
               ></Box>{" "}
               <IconButton onClick={undo}>
@@ -591,103 +750,182 @@ export default function Page({
               />
             </Box>
           </Stack>
+          <Box
+            sx={{
+              display: chatboxOpen ? "flex" : "none",
+              zIndex: 1000,
+              position: "absolute",
+              bottom: "10em",
+              transformOrigin: "bottom right",
+              right: "1em",
+              flexDirection: "column",
+              gap: 2,
+              p: 1.5,
+              borderRadius: 4,
+              backgroundColor: theme.palette.background.default,
+              fontFamily: nunito.style.fontFamily,
+              "*": {
+                fontFamily: nunito.style.fontFamily,
+              },
+              boxShadow: "0px 0px 4px 4px rgba(0, 0, 0, 0.05)",
+              width: { sm: "300px", xs: "300px", md: "300px" },
+              maxWidth: "100vw",
+              height: { sm: "400px", xs: "400px", md: "400px" },
+            }}
+          >
+            <Box sx={{ width: "100%", flexGrow: 1 }}></Box>
+            <Box
+              sx={{
+                width: "100%",
+                "& div": {
+                  display: "inline-block",
+                  backgroundColor: "rgba(245, 245, 245, 1)",
+                  borderRadius: "9999px",
+                  p: ".3em .6em",
+                  border: "1px solid rgba(0, 0, 0, 0.1)",
+                  margin: ".3em",
+                },
+              }}
+            >
+              <Box>Drawing plan</Box>
+              <Box>Comment on my drawing</Box>
+            </Box>
+            <Box
+              sx={{
+                width: "100%",
+                backgroundColor: "rgba(245, 245, 245, 1)",
+                borderRadius: "9999px",
+                p: ".5em 1em",
+              }}
+            >
+              &nbsp;
+            </Box>
+          </Box>
+          <Box
+            sx={{
+              zIndex: 1000,
+              position: "absolute",
+              bottom: "5em",
+              right: "1em",
+              p: 1.5,
+              borderRadius: 4,
+              backgroundColor: theme.palette.background.default,
+              ":hover": {
+                backgroundColor: theme.palette.grey[100],
+              },
+              cursor: "pointer",
+              boxShadow: "0px 0px 4px 4px rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            <Box
+              sx={{
+                width: "2.2em",
+                height: "2.2em",
+                position: "relative",
+                cursor: "pointer",
+              }}
+              onClick={(e) => setChatboxOpen(!chatboxOpen)}
+            >
+              <Image
+                src={`${base}/logos/arthm-logo.svg`}
+                alt="Arthm logo"
+                fill={true}
+                priority
+              />
+            </Box>
+          </Box>
         </Stack>
 
-        <Stack
-          direction="column"
+        <Box
+          ref={containerRef}
           sx={{
             width: "100vw",
             height: "100dvh",
+            flexGrow: 1,
+            background: "#ecececff",
+            display: "block",
           }}
         >
-          {/* Toolbar */}
-
-          {/* Canvas area (flex grow, measured by ResizeObserver) */}
-          <Box
-            ref={containerRef}
-            sx={{
+          <Stage
+            ref={stageRef}
+            width={stageSize.width}
+            height={stageSize.height}
+            x={stagePos.x}
+            y={stagePos.y}
+            scaleX={stageScale}
+            scaleY={stageScale}
+            onWheel={handleWheel}
+            draggable={isStageDraggable}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onMouseDown={(ev) => {
+              if (isStageDraggable) return;
+              handlePointerDown(ev);
+            }}
+            onTouchStart={(ev) => {
+              onTouchStart(ev);
+              if (isStageDraggable) return;
+              handlePointerDown(ev);
+            }}
+            onMouseMove={handlePointerMove}
+            onTouchMove={(ev) => {
+              if (isStageDraggable) return;
+              handlePointerMove(ev);
+            }}
+            onMouseUp={handlePointerUp}
+            onTouchEnd={(ev) => {
+              onTouchEnd(ev);
+              handlePointerUp();
+            }}
+            style={{
+              touchAction: "none",
               width: "100%",
-              flexGrow: 1,
-              background: "#ecececff",
-              display: "block",
+              height: "100%",
+              cursor: isStageDraggable
+                ? isPanningRef.current
+                  ? "grabbing"
+                  : "grab"
+                : tool==="brush"?`url("data:image/svg+xml,${brushCursorSVG}") 12 12, auto`:`url("data:image/svg+xml,${eraserCursorSVG}") 12 12, auto`,
             }}
           >
-            <Stage
-              ref={stageRef}
-              width={stageSize.width}
-              height={stageSize.height}
-              x={stagePos.x}
-              y={stagePos.y}
-              scaleX={stageScale}
-              scaleY={stageScale}
-              onWheel={handleWheel}
-              draggable={isStageDraggable}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onMouseDown={(ev) => {
-                if (isStageDraggable) return;
-                handlePointerDown(ev);
-              }}
-              onTouchStart={(ev) => {
-                onTouchStart(ev);
-                if (isStageDraggable) return;
-                handlePointerDown(ev);
-              }}
-              onMouseMove={handlePointerMove}
-              onTouchMove={(ev) => {
-                if (isStageDraggable) return;
-                handlePointerMove(ev);
-              }}
-              onMouseUp={handlePointerUp}
-              onTouchEnd={(ev) => {
-                onTouchEnd(ev);
-                handlePointerUp();
-              }}
-              style={{
-                touchAction: "none",
-                width: "100%",
-                height: "100%",
-                cursor: cursorStyle,
-              }}
-            >
-              {/* Background layer (separate so eraser doesn't affect it) */}
-              <Layer ref={bgLayerRef} listening={false}>
-                <BackgroundImage
-                  src={refImageSrc}
-                  stageWidth={stageSize.width}
-                  stageHeight={stageSize.height}
-                  opacity={bgOpacity}
+            {/* Background layer (separate so eraser doesn't affect it) */}
+            <Layer ref={bgLayerRef} listening={false}>
+              <BackgroundImage
+                src={refImageSrc}
+                stageWidth={stageSize.width}
+                stageHeight={stageSize.height}
+                opacity={bgOpacity}
+              />
+            </Layer>
+
+            {/* Drawing layer - strokes live here and can be erased */}
+            <Layer ref={layerRef}>
+              {lines.map((line, i) => (
+                <Line
+                  key={i}
+                  points={line.points}
+                  stroke={line.stroke}
+                  strokeWidth={line.strokeWidth}
+                  tension={0.3}
+                  lineCap={line.lineCap}
+                  lineJoin={line.lineJoin}
+                  globalCompositeOperation={line.compositeOperation}
                 />
-              </Layer>
-
-              {/* Drawing layer - strokes live here and can be erased */}
-              <Layer ref={layerRef}>
-                {lines.map((line, i) => (
-                  <Line
-                    key={i}
-                    points={line.points}
-                    stroke={line.stroke}
-                    strokeWidth={line.strokeWidth}
-                    tension={0.3}
-                    lineCap={line.lineCap}
-                    lineJoin={line.lineJoin}
-                    globalCompositeOperation={line.compositeOperation}
-                  />
-                ))}
-              </Layer>
-            </Stage>
-          </Box>
-        </Stack>
+              ))}
+            </Layer>
+          </Stage>
+        </Box>
       </Box>
-
+      <WelcomeDialog
+        open={welcomeDialogOpen}
+        onClose={() => setWelcomeDialogOpen(false)}
+      />
       <ReferenceImageDialog
         open={refImageSelectDialogOpen}
         onClose={() => setRefImageSelectDialogOpen(false)}
         onSelect={(src) => {
           if (!src) return;
           setRefImageSrc(src);
-          // optional: close dialog immediately when selecting (if you want)
-          // setDialogOpen(false);
         }}
       />
     </>

@@ -30,6 +30,7 @@ export default function Page() {
             minHeight: "100vh",
             backgroundImage: `url(${process.env.NEXT_PUBLIC_BASE_PATH}/_root/bg.jpg)`,
             backgroundSize: "cover",
+            paddingX: "1em",
           }}
         >
           <Box
@@ -67,7 +68,7 @@ export default function Page() {
           <Stack direction="column" gap={2} alignItems="center" width={"100%"}>
             <Box
               sx={{
-                marginTop: "3em",
+                marginTop: {  xs: "1.5em" ,sm: "3em",},
                 fontSize: "4em",
                 fontWeight: "500",
                 fontFamily: sourgummy.style.fontFamily,
@@ -181,7 +182,7 @@ export default function Page() {
             <video className="frame" src={`${base}/_root/demo_process.mp4`} autoPlay={true} loop={true} muted={true} controls={true}></video>
                       <Box sx={{color:"#5e5e5eff"}}>Photo on <a target="_blank" href="https://unsplash.com/photos/a-serene-lake-surrounded-by-grassy-hills-and-snow-capped-mountains-K4gXZ-WLaoE">Unsplash</a></Box>
 
-          <Box sx={{color:"#2e2e2eff"}}>This Arthm AI model can draw any image at the resolution of 384x384 pixels.</Box>
+          <Box sx={{color:"#2e2e2eff"}}>This Arthm AI model can draw at the resolution of 384x384 pixels.</Box>
           </Stack>
         </Box>
       </main>

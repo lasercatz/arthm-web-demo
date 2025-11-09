@@ -25,6 +25,25 @@ export default function ThemeProvider({
               },
             },
           },
+          MuiMenu: {
+            styleOverrides: {
+              paper: {
+                borderRadius: ".5em",
+                boxShadow: "0 0 1em 0 rgba(0, 0, 0, 0.1)",
+              },
+              list: {
+                outline: "none",
+              },
+            },
+          },
+          MuiDialog: {
+            styleOverrides: {
+              paper: {
+                borderRadius: "1em",
+                boxShadow: "0 0 1em 0 rgba(0, 0, 0, 0.1)",
+              },
+            },
+          },
         },
       }),
     [fontFamily]

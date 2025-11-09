@@ -142,37 +142,15 @@ export default function ReferenceImageDialog({
   return (
     <Dialog
       open={open}
-      onClose={(event, reason) => {
-        // keep your original logic: only close when reason is not backdropClick/escapeKeyDown
-        if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
-          onClose();
-        }
-      }}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
+      onClose={onClose}
       fullWidth
       maxWidth="md"
       fullScreen={fullScreen}
-      sx={{
-        "& .MuiPaper-root": {
-          borderRadius: 4,
-          overflow: "hidden",
-        },
-      }}
     >
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 2,
-          pt: 1,
-        }}
-      >
+
         <DialogTitle>
           {"Select a picture to paint"}
         </DialogTitle>
-      </Box>
 
       {/* Hidden file input */}
       <input
@@ -323,6 +301,11 @@ export default function ReferenceImageDialog({
       </Box>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
         <Button
           variant="contained"
           onClick={handleConfirm}
