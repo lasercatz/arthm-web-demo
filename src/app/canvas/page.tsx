@@ -47,7 +47,7 @@ type LineType = {
 };
 
 const DEFAULT_BRUSH = { color: "#000000", size: 4 };
-
+const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
 export function useImage(src?: string) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
 
@@ -101,11 +101,7 @@ function BackgroundImage({
   );
 }
 
-export default function Page({
-  base = "",
-}: {
-  base?: string;
-}) {
+export default function Page() {
   const router = useRouter();
   const theme = useTheme();
   const stageRef = useRef<any>(null);
@@ -283,172 +279,175 @@ export default function Page({
     };
   }, []);
 
+  const initialPinchDistanceRef = useRef<number | null>(null);
+  const initialStageScaleRef = useRef<number | null>(null);
+  const pinchCenterStageRef = useRef<{ x: number; y: number } | null>(null);
+  const lastMidpointPageRef = useRef<{ x: number; y: number } | null>(null);
+  const initialStagePosRef = useRef<{ x: number; y: number } | null>(null);
 
-const initialPinchDistanceRef = useRef<number | null>(null);
-const initialStageScaleRef = useRef<number | null>(null);
-const pinchCenterStageRef = useRef<{ x: number; y: number } | null>(null);
-const lastMidpointPageRef = useRef<{ x: number; y: number } | null>(null);
-const initialStagePosRef = useRef<{ x: number; y: number } | null>(null);
-
-const getTouchDistance = (t1: Touch, t2: Touch) => {
-  const dx = t2.clientX - t1.clientX;
-  const dy = t2.clientY - t1.clientY;
-  return Math.hypot(dx, dy);
-};
-
-const getTouchMidpoint = (t1: Touch, t2: Touch) => {
-  return {
-    x: (t1.clientX + t2.clientX) / 2,
-    y: (t1.clientY + t2.clientY) / 2,
+  const getTouchDistance = (t1: Touch, t2: Touch) => {
+    const dx = t2.clientX - t1.clientX;
+    const dy = t2.clientY - t1.clientY;
+    return Math.hypot(dx, dy);
   };
-};
 
-// Convert page/client coordinates to stage coordinates (taking stage position+scale into account)
-const pageToStage = (pageX: number, pageY: number) => {
-  const stage = stageRef.current;
-  if (!stage) return null;
-  const rect = stage.container().getBoundingClientRect();
-  const x = (pageX - rect.left - stage.x()) / stage.scaleX();
-  const y = (pageY - rect.top - stage.y()) / stage.scaleY();
-  return { x, y, pageX, pageY, rectLeft: rect.left, rectTop: rect.top };
-};
+  const getTouchMidpoint = (t1: Touch, t2: Touch) => {
+    return {
+      x: (t1.clientX + t2.clientX) / 2,
+      y: (t1.clientY + t2.clientY) / 2,
+    };
+  };
 
-const MIN_PINCH_DISTANCE_CHANGE = 6; // px — threshold to decide pinch vs pan
-const MIN_SCALE = 0.2;
-const MAX_SCALE = 8;
+  // Convert page/client coordinates to stage coordinates (taking stage position+scale into account)
+  const pageToStage = (pageX: number, pageY: number) => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+    const rect = stage.container().getBoundingClientRect();
+    const x = (pageX - rect.left - stage.x()) / stage.scaleX();
+    const y = (pageY - rect.top - stage.y()) / stage.scaleY();
+    return { x, y, pageX, pageY, rectLeft: rect.left, rectTop: rect.top };
+  };
 
-const onTouchStart = (e: any) => {
-  const touches: TouchList | undefined = e?.evt?.touches;
-  if (!touches) return;
+  const MIN_PINCH_DISTANCE_CHANGE = 6; // px — threshold to decide pinch vs pan
+  const MIN_SCALE = 0.2;
+  const MAX_SCALE = 8;
 
-  if (touches.length === 2) {
-    // initialize pinch/pan state
+  const onTouchStart = (e: any) => {
+    const touches: TouchList | undefined = e?.evt?.touches;
+    if (!touches) return;
+
+    if (touches.length === 2) {
+      // initialize pinch/pan state
+      const t1 = touches[0];
+      const t2 = touches[1];
+      const dist = getTouchDistance(t1, t2);
+      initialPinchDistanceRef.current = dist;
+
+      const midpoint = getTouchMidpoint(t1, t2);
+      // store midpoint in stage coords so we can keep that point fixed during scale
+      const stageMid = pageToStage(midpoint.x, midpoint.y);
+      pinchCenterStageRef.current = stageMid
+        ? { x: stageMid.x, y: stageMid.y }
+        : null;
+
+      lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
+
+      const stage = stageRef.current;
+      initialStageScaleRef.current = stage ? stage.scaleX() : null;
+      initialStagePosRef.current = stage
+        ? { x: stage.x(), y: stage.y() }
+        : null;
+
+      // enter draggable mode for two-finger gestures
+      isPanningRef.current = true;
+      setIsStageDraggable(true);
+    } else if (touches.length === 1) {
+      // single finger: drawing (unless stage is draggable)
+      if (isStageDraggable) return;
+      // existing single-finger drawing code should handle pointerdown
+    }
+  };
+
+  const onTouchMove = (e: any) => {
+    const touches: TouchList | undefined = e?.evt?.touches;
+    if (!touches) return;
+    if (touches.length !== 2) return;
+
+    // prevent page scroll while interacting
+    e.evt.preventDefault();
+
     const t1 = touches[0];
     const t2 = touches[1];
-    const dist = getTouchDistance(t1, t2);
-    initialPinchDistanceRef.current = dist;
-
+    const newDist = getTouchDistance(t1, t2);
     const midpoint = getTouchMidpoint(t1, t2);
-    // store midpoint in stage coords so we can keep that point fixed during scale
-    const stageMid = pageToStage(midpoint.x, midpoint.y);
-    pinchCenterStageRef.current = stageMid ? { x: stageMid.x, y: stageMid.y } : null;
 
-    lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
+    const initDist = initialPinchDistanceRef.current;
+    const initScale = initialStageScaleRef.current ?? 1;
+    const pinchCenterStage = pinchCenterStageRef.current;
+    const lastMid = lastMidpointPageRef.current;
+    const initPos = initialStagePosRef.current ?? { x: 0, y: 0 };
 
-    const stage = stageRef.current;
-    initialStageScaleRef.current = stage ? stage.scaleX() : null;
-    initialStagePosRef.current = stage ? { x: stage.x(), y: stage.y() } : null;
-
-    // enter draggable mode for two-finger gestures
-    isPanningRef.current = true;
-    setIsStageDraggable(true);
-  } else if (touches.length === 1) {
-    // single finger: drawing (unless stage is draggable)
-    if (isStageDraggable) return;
-    // existing single-finger drawing code should handle pointerdown
-  }
-};
-
-const onTouchMove = (e: any) => {
-  const touches: TouchList | undefined = e?.evt?.touches;
-  if (!touches) return;
-  if (touches.length !== 2) return;
-
-  // prevent page scroll while interacting
-  e.evt.preventDefault();
-
-  const t1 = touches[0];
-  const t2 = touches[1];
-  const newDist = getTouchDistance(t1, t2);
-  const midpoint = getTouchMidpoint(t1, t2);
-
-  const initDist = initialPinchDistanceRef.current;
-  const initScale = initialStageScaleRef.current ?? 1;
-  const pinchCenterStage = pinchCenterStageRef.current;
-  const lastMid = lastMidpointPageRef.current;
-  const initPos = initialStagePosRef.current ?? { x: 0, y: 0 };
-
-  if (initDist == null || pinchCenterStage == null) {
-    // safety: if we lost init values, bail
-    return;
-  }
-
-  // Decide whether this movement is a pinch (scale) or a pan (move)
-  const distDelta = Math.abs(newDist - initDist);
-
-  if (distDelta >= MIN_PINCH_DISTANCE_CHANGE) {
-    // PINCH / ZOOM
-    const scaleFactor = newDist / initDist;
-    let newScale = initScale * scaleFactor;
-    newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-    setStageScale(newScale);
-
-    // Keep the pinch center anchored. Convert the current midpoint page coords
-    // into stage coordinates *before* scaling -> compute new stage position.
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    // pointer page coords -> we have midpoint.x/midpoint.y
-    // mousePointTo (in stage coords relative to old scale) = pinchCenterStage (we stored already)
-    const mousePointTo = pinchCenterStage;
-
-    // compute new top-left so that mousePointTo stays under midpoint on screen
-    // stage.container bounding rect used to compute container offset (midpoint is page coords)
-    const rect = stage.container().getBoundingClientRect();
-    const newPos = {
-      x: midpoint.x - rect.left - mousePointTo.x * newScale,
-      y: midpoint.y - rect.top - mousePointTo.y * newScale,
-    };
-
-    setStagePos(newPos);
-  } else {
-    // TWO-FINGER PAN: move stage by delta of midpoint
-    if (!lastMid) {
-      lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
+    if (initDist == null || pinchCenterStage == null) {
+      // safety: if we lost init values, bail
       return;
     }
-    const dx = midpoint.x - lastMid.x;
-    const dy = midpoint.y - lastMid.y;
 
-    // update stage position by adding delta in page pixels
-    // But stage.x/y are in page pixels already (since you set them that way earlier)
-    // So we can apply dx,dy directly.
-    setStagePos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    // Decide whether this movement is a pinch (scale) or a pan (move)
+    const distDelta = Math.abs(newDist - initDist);
 
-    // update stored last midpoint
-    lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
-  }
-};
+    if (distDelta >= MIN_PINCH_DISTANCE_CHANGE) {
+      // PINCH / ZOOM
+      const scaleFactor = newDist / initDist;
+      let newScale = initScale * scaleFactor;
+      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+      setStageScale(newScale);
 
-const onTouchEnd = (e: any) => {
-  const touches: TouchList | undefined = e?.evt?.touches;
-  const count = touches ? touches.length : 0;
+      // Keep the pinch center anchored. Convert the current midpoint page coords
+      // into stage coordinates *before* scaling -> compute new stage position.
+      const stage = stageRef.current;
+      if (!stage) return;
 
-  // if no fingers left — fully end gesture
-  if (count === 0) {
-    isPanningRef.current = false;
-    initialPinchDistanceRef.current = null;
-    initialStageScaleRef.current = null;
-    pinchCenterStageRef.current = null;
-    lastMidpointPageRef.current = null;
-    initialStagePosRef.current = null;
-    if (!spacePressed) setIsStageDraggable(false);
-  } else if (count === 1) {
-    // If one remains, we might want to switch into single-finger drawing mode.
-    // Clean up pinch state but keep stage draggable only if space is pressed or other flags
-    initialPinchDistanceRef.current = null;
-    initialStageScaleRef.current = null;
-    pinchCenterStageRef.current = null;
-    lastMidpointPageRef.current = null;
-    initialStagePosRef.current = null;
+      // pointer page coords -> we have midpoint.x/midpoint.y
+      // mousePointTo (in stage coords relative to old scale) = pinchCenterStage (we stored already)
+      const mousePointTo = pinchCenterStage;
 
-    // keep draggable based on spacePressed
-    if (!spacePressed) {
-      setIsStageDraggable(false);
-      isPanningRef.current = false;
+      // compute new top-left so that mousePointTo stays under midpoint on screen
+      // stage.container bounding rect used to compute container offset (midpoint is page coords)
+      const rect = stage.container().getBoundingClientRect();
+      const newPos = {
+        x: midpoint.x - rect.left - mousePointTo.x * newScale,
+        y: midpoint.y - rect.top - mousePointTo.y * newScale,
+      };
+
+      setStagePos(newPos);
+    } else {
+      // TWO-FINGER PAN: move stage by delta of midpoint
+      if (!lastMid) {
+        lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
+        return;
+      }
+      const dx = midpoint.x - lastMid.x;
+      const dy = midpoint.y - lastMid.y;
+
+      // update stage position by adding delta in page pixels
+      // But stage.x/y are in page pixels already (since you set them that way earlier)
+      // So we can apply dx,dy directly.
+      setStagePos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+
+      // update stored last midpoint
+      lastMidpointPageRef.current = { x: midpoint.x, y: midpoint.y };
     }
-  }
-};
+  };
+
+  const onTouchEnd = (e: any) => {
+    const touches: TouchList | undefined = e?.evt?.touches;
+    const count = touches ? touches.length : 0;
+
+    // if no fingers left — fully end gesture
+    if (count === 0) {
+      isPanningRef.current = false;
+      initialPinchDistanceRef.current = null;
+      initialStageScaleRef.current = null;
+      pinchCenterStageRef.current = null;
+      lastMidpointPageRef.current = null;
+      initialStagePosRef.current = null;
+      if (!spacePressed) setIsStageDraggable(false);
+    } else if (count === 1) {
+      // If one remains, we might want to switch into single-finger drawing mode.
+      // Clean up pinch state but keep stage draggable only if space is pressed or other flags
+      initialPinchDistanceRef.current = null;
+      initialStageScaleRef.current = null;
+      pinchCenterStageRef.current = null;
+      lastMidpointPageRef.current = null;
+      initialStagePosRef.current = null;
+
+      // keep draggable based on spacePressed
+      if (!spacePressed) {
+        setIsStageDraggable(false);
+        isPanningRef.current = false;
+      }
+    }
+  };
 
   useEffect(() => {
     const roTarget = containerRef.current;
@@ -865,9 +864,10 @@ const onTouchEnd = (e: any) => {
               handlePointerDown(ev);
             }}
             onMouseMove={handlePointerMove}
-            onTouchMove={(ev) => {
+            onTouchMove={(e) => {
+              onTouchMove(e);
               if (isStageDraggable) return;
-              handlePointerMove(ev);
+              handlePointerMove(e);
             }}
             onMouseUp={handlePointerUp}
             onTouchEnd={(ev) => {
@@ -882,7 +882,9 @@ const onTouchEnd = (e: any) => {
                 ? isPanningRef.current
                   ? "grabbing"
                   : "grab"
-                : tool==="brush"?`url("data:image/svg+xml,${brushCursorSVG}") 12 12, auto`:`url("data:image/svg+xml,${eraserCursorSVG}") 12 12, auto`,
+                : tool === "brush"
+                ? `url("data:image/svg+xml,${brushCursorSVG}") 12 12, auto`
+                : `url("data:image/svg+xml,${eraserCursorSVG}") 12 12, auto`,
             }}
           >
             {/* Background layer (separate so eraser doesn't affect it) */}
