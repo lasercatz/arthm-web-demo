@@ -1,4 +1,4 @@
 1:"$Sreact.fragment"
-2:I[39756,["/arthm-web-demo/_next/static/chunks/856fafb2c135952e.js","/arthm-web-demo/_next/static/chunks/7bde85d9df9a9906.js","/arthm-web-demo/_next/static/chunks/167df64cda48d4ef.js"],"default"]
-3:I[37457,["/arthm-web-demo/_next/static/chunks/856fafb2c135952e.js","/arthm-web-demo/_next/static/chunks/7bde85d9df9a9906.js","/arthm-web-demo/_next/static/chunks/167df64cda48d4ef.js"],"default"]
-0:{"buildId":"Pwksi_RHfE3O9IHpbOpuI","rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"loading":null,"isPartial":false}
+2:I[39756,["/arthm-web-demo/_next/static/chunks/068313f4d82eba9e.js","/arthm-web-demo/_next/static/chunks/0f34b0057347e702.js","/arthm-web-demo/_next/static/chunks/167df64cda48d4ef.js"],"default"]
+3:I[37457,["/arthm-web-demo/_next/static/chunks/068313f4d82eba9e.js","/arthm-web-demo/_next/static/chunks/0f34b0057347e702.js","/arthm-web-demo/_next/static/chunks/167df64cda48d4ef.js"],"default"]
+0:{"buildId":"dTyDGnrGfC_VDKS6-pdap","rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"loading":null,"isPartial":false}
