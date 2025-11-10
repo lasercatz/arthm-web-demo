@@ -13,15 +13,13 @@ import {
   Menu,
   MenuItem,
   Popover,
-  Paper,
-  ListItemIcon,
-  ListItemText,
 } from "@mui/material";
 import { ChromePicker } from "react-color";
 import ListSubheader from "@mui/material/ListSubheader";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
-import NoteRoundedIcon from "@mui/icons-material/NoteRounded";
+import LayersRoundedIcon from "@mui/icons-material/LayersRounded";
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import { styled, useTheme } from "@mui/material/styles";
 import { Nunito } from "next/font/google";
 
@@ -109,7 +107,6 @@ export default function Page() {
   const bgLayerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // drawing state
   const [tool, setTool] = useState<"brush" | "eraser">("brush");
   const [lines, setLines] = useState<LineType[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -205,7 +202,6 @@ export default function Page() {
       return updated;
     });
   };
-
   const handlePointerUp = () => {
     setIsDrawing(false);
   };
@@ -365,7 +361,6 @@ export default function Page() {
     const initScale = initialStageScaleRef.current ?? 1;
     const pinchCenterStage = pinchCenterStageRef.current;
     const lastMid = lastMidpointPageRef.current;
-    const initPos = initialStagePosRef.current ?? { x: 0, y: 0 };
 
     if (initDist == null || pinchCenterStage == null) {
       // safety: if we lost init values, bail
@@ -489,9 +484,11 @@ export default function Page() {
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(true);
   const [refImageSelectDialogOpen, setRefImageSelectDialogOpen] =
     useState(false);
-  const [chatboxOpen, setChatboxOpen] = useState(false);
+  const [chatboxOpen, setChatboxOpen] = useState(true);
 
-  const [refImageSrc, setRefImageSrc] = useState<string>("");
+  const [refImageSrc, setRefImageSrc] = useState<string>(
+    "https://images.unsplash.com/photo-1760612393683-1b2cda6fdbbe"
+  );
   const [colorSelectorOpen, setColorSelectorOpen] = useState(false);
   const leftToolbarAnchorRef = useRef<HTMLDivElement | null>(null);
 
@@ -533,7 +530,7 @@ export default function Page() {
                 fullWidth
                 variant="standard"
                 value={artworkName}
-                placeholder="Untitiled artwork"
+                placeholder="Untitled artwork"
                 onChange={(e) => setArtworkName(e.target.value)}
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
@@ -544,6 +541,7 @@ export default function Page() {
                   "& input": {
                     fontFamily: nunito.style.fontFamily,
                     color: "#0000009a",
+                    width: { xs: "9em", sm: "12em" },
                   },
                 }}
               />
@@ -622,7 +620,7 @@ export default function Page() {
                 </MenuItem>
               </Menu>
               <button>
-                <HistoryRoundedIcon />
+                <LayersRoundedIcon />
               </button>
             </Stack>
           </Stack>
@@ -638,8 +636,7 @@ export default function Page() {
                 position: "absolute",
                 bottom: { xs: "1em", sm: "auto" },
                 mt: { sm: "8em" },
-                left: { xs: "50%", sm: "1em" },
-                transform: { xs: "translateX(-50%)", sm: "translateX(0)" },
+                left: { xs: "1em", sm: "1em" },
                 padding: { xs: ".6em .8em", sm: "1em .8em" },
                 borderRadius: "9999px",
                 backgroundColor: "#ffffffff",
@@ -769,7 +766,21 @@ export default function Page() {
               height: { sm: "400px", xs: "400px", md: "400px" },
             }}
           >
-            <Box sx={{ width: "100%", flexGrow: 1 }}></Box>
+            <Box sx={{ width: "100%", flexGrow: 1, p: 2 }}>
+              <Box
+                sx={{
+                  backgroundColor: "rgba(245, 245, 245, 1)",
+                  borderRadius: "1em",
+                  p: ".5em 1em",
+                }}
+              >
+                {" "}
+                <Typography>
+                  This is my suggested drawing steps:
+                  sky ➜ mountain ➜ grass ➜ water ➜ van
+                </Typography>
+              </Box>
+            </Box>
             <Box
               sx={{
                 width: "100%",
@@ -786,16 +797,22 @@ export default function Page() {
               <Box>Drawing plan</Box>
               <Box>Comment on my drawing</Box>
             </Box>
-            <Box
+            <Stack
+            direction="row"
               sx={{
+                alignItems: "center",
                 width: "100%",
                 backgroundColor: "rgba(245, 245, 245, 1)",
                 borderRadius: "9999px",
-                p: ".5em 1em",
+                p: ".3em .5em",
               }}
             >
-              &nbsp;
-            </Box>
+            <IconButton><AddRoundedIcon /></IconButton>
+            <TextField variant="standard"        slotProps={{
+                  input: { disableUnderline: true },
+                }} />
+              <IconButton><SendRoundedIcon /></IconButton>
+            </Stack>
           </Box>
           <Box
             sx={{
@@ -897,7 +914,6 @@ export default function Page() {
               />
             </Layer>
 
-            {/* Drawing layer - strokes live here and can be erased */}
             <Layer ref={layerRef}>
               {lines.map((line, i) => (
                 <Line

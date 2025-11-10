@@ -101,7 +101,7 @@ export default function Page() {
                 color: "#444444ff",
               }}
             >
-              who draws & grows with you
+              that draws & grows with you
             </Box>
             <button
             onClick={()=>{
@@ -113,6 +113,7 @@ export default function Page() {
                 borderRadius: ".8em",
                 border: "1px solid #ccc",
                 marginTop: "3em",
+                boxShadow: "0 0 1em 0 rgba(0, 0, 0, 0.1)",
               }}
             >
               <Stack

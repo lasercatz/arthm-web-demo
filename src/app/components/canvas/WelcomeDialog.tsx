@@ -31,9 +31,15 @@ export default function WelcomeDialog({ open, onClose }: Props) {
       fullWidth
       maxWidth="md"
       fullScreen={fullScreen}
-    
+     sx={{
+       "& .MuiPaper-root": {
+        
+      borderRadius: {xs: "0", md: "1em"},
+    },
+
+     }}
     >
-      <DialogTitle>{"How to use?"}</DialogTitle>
+      <DialogTitle>{"About"}</DialogTitle>
 
       <DialogContent>
         <Stack direction="column" gap={2}>
@@ -43,20 +49,7 @@ export default function WelcomeDialog({ open, onClose }: Props) {
           </Typography>
           <Typography>
             Currently, Arthm can generate drawing plans and paint reference images. Turn-based interaction and text-guided drawing are not supported.
-            Start by selecting a reference image:{" "}
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                color: theme.palette.text.secondary,
-                transform: "translateY(.3em)",
-              }}
-            >
-              {" "}
-              <MoreHorizRoundedIcon />&nbsp;&nbsp;
-              {">"}&nbsp;&nbsp;Select reference image
-            </span>
-            .
+            A reference image has been selected for demostration. For painting generation, please refer to the homepage.
           </Typography>
         </Stack>
       </DialogContent>

@@ -1,7 +1,11 @@
 "use client";
 
 import React, { ReactNode, useMemo } from "react";
-import { ThemeProvider as MUIThemeProvider, createTheme, CssBaseline } from "@mui/material";
+import {
+  ThemeProvider as MUIThemeProvider,
+  createTheme,
+  CssBaseline,
+} from "@mui/material";
 
 export default function ThemeProvider({
   children,
@@ -10,44 +14,55 @@ export default function ThemeProvider({
   children: ReactNode;
   fontFamily?: string;
 }) {
-  // create theme on client; memoize so it doesn't recreate each render
-  const theme = useMemo(
-    () =>
-      createTheme({
-        typography: {
-          fontFamily: fontFamily ? `${fontFamily}, sans-serif` : "sans-serif",
-        },
-        components: {
-          MuiCssBaseline: {
-            styleOverrides: {
-              body: {
-                fontFamily: fontFamily ? `${fontFamily}, sans-serif` : "sans-serif",
-              },
-            },
-          },
-          MuiMenu: {
-            styleOverrides: {
-              paper: {
-                borderRadius: ".5em",
-                boxShadow: "0 0 1em 0 rgba(0, 0, 0, 0.1)",
-              },
-              list: {
-                outline: "none",
-              },
-            },
-          },
-          MuiDialog: {
-            styleOverrides: {
-              paper: {
-                borderRadius: "1em",
-                boxShadow: "0 0 1em 0 rgba(0, 0, 0, 0.1)",
-              },
+  const theme = useMemo(() => {
+    const baseTheme = createTheme();
+
+    return createTheme({
+      ...baseTheme,
+      typography: {
+        fontFamily: fontFamily ? `${fontFamily}, sans-serif` : "sans-serif",
+      },
+      components: {
+        MuiCssBaseline: {
+          styleOverrides: {
+            body: {
+              fontFamily: fontFamily ? `${fontFamily}, sans-serif` : "sans-serif",
             },
           },
         },
-      }),
-    [fontFamily]
-  );
+        MuiMenu: {
+          styleOverrides: {
+            paper: {
+              borderRadius: ".5em",
+              boxShadow: "0 0 1em 0 rgba(0, 0, 0, 0.1)",
+            },
+            list: {
+              outline: "none",
+            },
+          },
+        },
+        MuiDialog: {
+          styleOverrides: {
+            paper: {
+              borderRadius: "1em",
+              boxShadow: "0 0 1em 0 rgba(0, 0, 0, 0.1)",
+              [baseTheme.breakpoints.down("sm")]: {
+                borderRadius: 0,
+              },
+            },
+          },
+        },
+        MuiButton: {
+          styleOverrides: {
+            root: {
+              borderRadius: ".5em",
+              textTransform: "none",
+            },
+          },
+        },
+      },
+    });
+  }, [fontFamily]);
 
   return (
     <MUIThemeProvider theme={theme}>

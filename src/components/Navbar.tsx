@@ -32,7 +32,7 @@ export default function Navbar() {
           position: "fixed",
            zIndex: 1000,
           backgroundColor: scrolled
-            ? "rgba(255, 255, 255, 0.9)"
+            ? "rgba(255, 255, 255, 0.85)"
             : "rgba(255, 255, 255, 0)",
 
           backdropFilter: "blur(15px)",
