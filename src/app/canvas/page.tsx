@@ -484,7 +484,7 @@ export default function Page() {
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(true);
   const [refImageSelectDialogOpen, setRefImageSelectDialogOpen] =
     useState(false);
-  const [chatboxOpen, setChatboxOpen] = useState(true);
+  const [chatboxOpen, setChatboxOpen] = useState(false);
 
   const [refImageSrc, setRefImageSrc] = useState<string>(
     "https://images.unsplash.com/photo-1760612393683-1b2cda6fdbbe"

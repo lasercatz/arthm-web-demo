@@ -48,7 +48,7 @@ export default function WelcomeDialog({ open, onClose }: Props) {
             functionalities.
           </Typography>
           <Typography>
-            Currently, Arthm can generate drawing plans and paint reference images. Turn-based interaction and text-guided drawing are not supported.
+            Arthm can generate drawing plans and paint reference images. Currently, turn-based interaction and text-guided drawing are not supported.
             A reference image has been selected for demostration. For painting generation, please refer to the homepage.
           </Typography>
         </Stack>
